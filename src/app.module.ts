@@ -7,6 +7,7 @@ import { EntriesModule } from './entries/entries.module';
 import { StockModule } from './stock/stock.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { ReportsModule } from './reports/reports.module';
+import { UsersModule } from './users/users.module';
 import { databaseConfig } from './config/database.config';
 
 @Module({
@@ -14,6 +15,7 @@ import { databaseConfig } from './config/database.config';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRoot(databaseConfig()),
     AuthModule,
+    UsersModule,
     StationsModule,
     EntriesModule,
     StockModule,
