@@ -1,0 +1,73 @@
+services:
+  api:
+    build: .
+    container_name: gastracker-api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: gastrackeruser
+      DB_PASSWORD: FivePlusFive
+      DB_NAME: gastracker
+      JWT_SECRET: change-this-in-production-to-a-long-random-string
+      JWT_EXPIRES_IN: 7d
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - gastracker-net
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: gastracker-db
+    environment:
+      POSTGRES_USER: gastrackeruser
+      POSTGRES_PASSWORD: FivePlusFive
+      POSTGRES_DB: gastracker
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gastrackeruser -d gastracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gastracker-net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: gastracker-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - gastracker-net
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: gastracker-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - gastracker-net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  gastracker-net:
+    driver: bridge
