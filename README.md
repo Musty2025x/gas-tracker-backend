@@ -1,6 +1,24 @@
-# ⛽ GasTracker Backend API
+# ⛽ GasTracker Backend
 
-LPG Station Management System — NestJS + PostgreSQL + Docker
+> LPG Station Management System — NestJS + PostgreSQL + Docker
+
+[![NestJS](https://img.shields.io/badge/NestJS-v10-red)](https://nestjs.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)](https://postgresql.org)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)](https://docker.com)
+
+---
+
+## 🚀 Quick Start (Local)
+
+```bash
+git clone https://gitlab.com/musty2025x/gas-tracker-backend.git
+cd gas-tracker-backend
+cp .env.example .env          # Edit with your values
+docker-compose up -d          # Start all 4 containers
+```
+
+API:      http://localhost:3000/api/v1
+Swagger:  http://localhost:3000/api/docs
 
 ---
 
@@ -8,139 +26,79 @@ LPG Station Management System — NestJS + PostgreSQL + Docker
 
 ```
 src/
-├── auth/           # JWT authentication, register, login
-├── users/          # User entity (owner, manager, attendant roles)
-├── stations/       # Gas station CRUD, price management
-├── entries/        # Daily meter readings + cash/POS remittance
-├── stock/          # Gas delivery and stock movement tracking
-├── expenses/       # Station expense recording
-├── reports/        # Daily and weekly aggregated reports
-├── common/
-│   ├── guards/     # JWT auth guard, roles guard
-│   ├── decorators/ # @CurrentUser(), @Roles()
-│   └── filters/
-└── config/         # Database config
+├── auth/           JWT authentication (register, login)
+├── users/          Staff management (CRUD, roles)
+├── stations/       Gas station management
+├── entries/        Daily meter readings + variance
+├── stock/          Gas delivery tracking
+├── expenses/       Station expense recording
+├── reports/        Daily and weekly report aggregation
+└── common/         Guards, decorators, filters
 ```
 
-## 🚀 Quick Start (Local Dev)
+## 🐳 Docker Services
 
-### Prerequisites
-- Docker + Docker Compose
-- Node.js 20+
+| Container         | Image                  | Port        |
+|-------------------|------------------------|-------------|
+| gastracker-api    | gas-tracker-backend-api| 3000        |
+| gastracker-db     | postgres:15-alpine     | 5432        |
+| gastracker-redis  | redis:7-alpine         | 6379        |
+| gastracker-nginx  | nginx:alpine           | 80 / 443    |
 
-### 1. Clone and configure
-```bash
-git clone <your-repo>
-cd gas-tracker-backend
-cp .env.example .env
-# Edit .env with your values
-```
+## 👤 User Roles
 
-### 2. Run with Docker Compose
-```bash
-docker-compose up -d
-```
-
-API runs at: `http://localhost:3000/api/v1`  
-Swagger docs: `http://localhost:3000/api/docs`
-
-### 3. Run locally (without Docker)
-```bash
-npm install
-npm run start:dev
-```
-
----
+| Role        | Permissions                              |
+|-------------|------------------------------------------|
+| owner       | Full access — manages station and staff  |
+| manager     | Read/write all station data              |
+| attendant   | Submit daily meter entries only          |
+| super_admin | Platform-wide admin (GasTracker team)    |
 
 ## 📡 API Endpoints
 
 ### Auth
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register user |
-| POST | `/api/v1/auth/login` | Login, get JWT token |
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+
+### Staff
+- `GET    /api/v1/staff/station/:id`
+- `POST   /api/v1/staff`
+- `PUT    /api/v1/staff/:id/toggle-active`
+- `PUT    /api/v1/staff/:id/reset-password`
+- `DELETE /api/v1/staff/:id`
 
 ### Stations
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/stations` | Create station |
-| GET | `/api/v1/stations/my-stations` | Owner's stations |
-| PUT | `/api/v1/stations/:id/price` | Update gas price |
+- `POST /api/v1/stations`
+- `GET  /api/v1/stations/my-stations`
+- `PUT  /api/v1/stations/:id/price`
 
-### Entries (Daily Meter)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/entries` | Submit daily entry |
-| POST | `/api/v1/entries/sync` | Bulk sync offline entries |
-| GET | `/api/v1/entries/station/:id?from=&to=` | Get entries by date range |
-| GET | `/api/v1/entries/station/:id/summary?date=` | Daily summary |
+### Entries
+- `POST /api/v1/entries`
+- `POST /api/v1/entries/sync`  (offline bulk sync)
+- `GET  /api/v1/entries/station/:id?from=&to=`
+- `GET  /api/v1/entries/station/:id/summary?date=`
 
-### Stock
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/stock/delivery` | Record gas delivery |
-| GET | `/api/v1/stock/station/:id` | Stock movements |
-| GET | `/api/v1/stock/station/:id/current` | Current stock level |
+### Stock / Expenses / Reports
+- Full CRUD — see Swagger docs
 
-### Expenses
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/expenses` | Record expense |
-| GET | `/api/v1/expenses/station/:id` | Station expenses |
+## 🔒 Security
+- JWT authentication on all routes except /auth
+- Role-based access control (RBAC)
+- bcrypt password hashing (12 rounds)
+- CORS configured via FRONTEND_URL env var
 
-### Reports
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/v1/reports/station/:id/daily?date=` | Daily report |
-| GET | `/api/v1/reports/station/:id/weekly?from=&to=` | Weekly report |
+## 📦 Deploy to Production VPS
 
----
-
-## 👤 User Roles
-
-| Role | Access |
-|------|--------|
-| `owner` | All stations they own, full read/write |
-| `manager` | Assigned station, all data |
-| `attendant` | Assigned station, entries only |
-| `super_admin` | Platform-wide (GasTracker admin) |
-
----
-
-## 🐳 Production Deployment (Contabo VPS)
+See **GasTracker-Deployment-Guide.docx** for the full step-by-step guide.
 
 ```bash
-# On your VPS
-git clone <repo>
-cd gas-tracker-backend
-
-# Set production env
-cp .env.example .env
-nano .env  # Set strong passwords, JWT secret, etc.
-
-# Build and run
-docker-compose up -d --build
-
-# Check logs
-docker-compose logs -f api
+# On your Contabo VPS
+git clone <repo> && cd gas-tracker-backend
+cp .env.example .env && nano .env
+docker-compose build --no-cache
+docker-compose up -d
 ```
 
 ---
 
-## 🔒 Security Checklist (Before Going Live)
-- [ ] Change `JWT_SECRET` to a long random string
-- [ ] Change all default DB passwords
-- [ ] Enable HTTPS via Certbot/Let's Encrypt
-- [ ] Set `NODE_ENV=production`
-- [ ] Enable Nginx rate limiting
-- [ ] Set up daily PostgreSQL backups
-
----
-
-## 📱 Mobile App
-The React Native (Expo) mobile app lives in `../gas-tracker-mobile`
-
-**Offline sync flow:**
-1. Mobile stores entries in SQLite when offline
-2. On reconnect, calls `POST /api/v1/entries/sync` with all pending entries
-3. Server deduplicates by `localId` field
+Built by **Ajibola Sodiq** · GasTracker © 2026
